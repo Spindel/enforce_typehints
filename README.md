@@ -3,7 +3,7 @@
 This runs mypy on all imports, and currently just dumps the text, but
 that shows the concept.
 
-Properly hooking both path and file imports might requir something
+Properly hooking both path and file imports might require something
 more, and raising proper import errors when files don't pass is also
 left to do.
 
