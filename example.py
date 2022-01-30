@@ -1,4 +1,4 @@
-import enforcing
+import typeforce.enforcing
 
 print("Importing typing")
 import typing
@@ -10,6 +10,5 @@ import pathlib
 print("Importing base64")
 import base64
 
-
-print("Importing to_import")
-import to_import
+print("Importing bad_test_case")
+import bad_test_case

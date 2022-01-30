@@ -10,5 +10,7 @@ left to do.
 However, conceptually it sort of works, and simply importing it in a
 software can toggle the flag on to force strict typing more.
 
-If I ever get around to it, I might clean it up, but now it's 2 AM and
-I've finished my trappist for the night, so we leave it here.
+To use it, add  "import typeforce.enforcing"  to the modules of the initial
+code, and watch your code explode when you have a badly typed module.
+
+Also note, that imports will not just be slow, they will be very slow.
