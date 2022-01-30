@@ -11,6 +11,7 @@ def test_import_bad_fails():
     try:
         import bad_test_case
     except ImportError as ex:
+        print(ex)
         if "No module named" in str(ex):
             raise ex
         pass

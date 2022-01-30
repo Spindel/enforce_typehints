@@ -22,7 +22,7 @@ _LOG = logging.getLogger(__name__)
 _Path = Union[bytes, str]
 
 
-def mypy_self():
+def mypy_self() -> None:
     """Run mypy on this file.
 
     This is needed to run and make mypy load dependencies early on before we
@@ -36,9 +36,9 @@ class ImportTypeError(ImportError):
     """Type error when importing file."""
 
 
-def mypy_run_file(filename: str, *, strict: bool):
+def mypy_run_file(filename: str, *, strict: bool) -> None:
     """Run mypy on the filename."""
-    _LOG.debug(f"Running mypy on %s", filename)
+    _LOG.debug("Running mypy on %s", filename)
     argv = []
     if strict:
         argv.append("--strict")
@@ -50,8 +50,28 @@ def mypy_run_file(filename: str, *, strict: bool):
         raise ImportTypeError("Type error on file", filename, result[0])
 
 
-def maybe_run_mypy(spec):
+def mypy_run_module(module: str, *, strict: bool) -> None:
+    """Run mypy on the filename."""
+    _LOG.debug("Running mypy on %s", module)
+    argv = []
+    if strict:
+        argv.append("--strict")
+    argv.append("-m")
+    argv.append(module)
+    result = mypy.api.run(argv)
+    if result[-1] != 0:
+        _LOG.error("mypy report stdout: %s", result[0])
+        _LOG.error("mypy report stderr: %s", result[1])
+        raise ImportTypeError("Type error on file", module, result[0])
+
+
+def maybe_run_mypy(spec: ModuleSpec | None) -> None:
     """Checks if res is something we should run mypy on, and does it."""
+    ignore = {
+        "_virtualenv",
+        "_distutils_hack",
+        "mypy",
+    }
     if spec is None:
         return
     if spec.name in sys.builtin_module_names:
@@ -59,6 +79,12 @@ def maybe_run_mypy(spec):
     if spec.name in sys.stdlib_module_names:
         return
     if spec.parent in sys.stdlib_module_names:
+        return
+    # Ignore private/hidden packages
+    if "._" in spec.name or spec.name.startswith("_"):
+        return
+
+    if spec.name in ignore:
         return
     if (
         spec
@@ -74,7 +100,14 @@ def maybe_run_mypy(spec):
             filename,
             spec.submodule_search_locations,
         )
-        mypy_run_file(filename, strict=True)
+        # Technically we could do something better here.
+        # But this is good enough
+        if "site-packages" in filename:
+            _LOG.debug("Parsing %s as a module", spec.name)
+            mypy_run_module(spec.name, strict=False)
+        else:
+            _LOG.debug("Parsing %s as a file", filename)
+            mypy_run_file(filename, strict=True)
 
 
 class TypeMetaPathFinder(MetaPathFinder):
@@ -101,7 +134,11 @@ class TypeMetaPathFinder(MetaPathFinder):
 
 
 class TypePathEntryFinder(importlib.machinery.FileFinder):
-    def find_spec(self, fullname, target=None):
+    """A path entry finder that also type checks."""
+
+    def find_spec(
+        self, fullname: str, target: ModuleType | None = None
+    ) -> ModuleSpec | None:
         _LOG.debug("looking for:fullname=%s, target=%s", fullname, target)
         res = super().find_spec(fullname, target)
         # print(f"Type Path result {res}")
@@ -109,7 +146,7 @@ class TypePathEntryFinder(importlib.machinery.FileFinder):
         return res
 
 
-def install_hooks():
+def install_hooks() -> None:
     """Install the hooks in the running program."""
     loader_details = (
         importlib.machinery.SourceFileLoader,
@@ -126,6 +163,19 @@ def install_hooks():
     sys.path_hooks.append(hook)
     # print("Path hooks after", sys.path_hooks)
     # print("Meta finders after", sys.meta_path)
+
+
+def check_all_loaded() -> None:
+    """Type check all loaded modules."""
+    modules = list(sys.modules.values())
+    for mod in modules:
+        if hasattr(mod, "__spec__"):
+            spec = mod.__spec__
+            try:
+                maybe_run_mypy(spec)
+            except ImportError:
+                print(spec)
+                raise
 
 
 mypy_self()
