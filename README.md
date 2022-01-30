@@ -1,4 +1,4 @@
-POC: Force static type hints via import
+# Force static type hints at import time
 
 This runs mypy on all imports, and currently just dumps the text, but
 that shows the concept.
