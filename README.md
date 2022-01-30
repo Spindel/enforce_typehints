@@ -14,3 +14,6 @@ To use it, add  "import typeforce.enforcing"  to the modules of the initial
 code, and watch your code explode when you have a badly typed module.
 
 Also note, that imports will not just be slow, they will be very slow.
+
+
+[![asciicast](https://asciinema.org/a/4DbpNJvuvspyQGzt6VMlbd6MD.svg)](https://asciinema.org/a/4DbpNJvuvspyQGzt6VMlbd6MD)
